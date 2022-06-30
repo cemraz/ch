@@ -8,7 +8,7 @@ class Setting():
 
         self.bg_color = (230, 255, 230)#Цвет фона
 
-        self.beaver_limit = 3#Разрешено смертей бобров
+        self.beaver_limit = 1#Разрешено смертей бобров
 
         # Параметры пули
         self.bullet_speed = 50
@@ -18,7 +18,7 @@ class Setting():
         self.bullets_allowed = 5
 
         #Параметры белок
-        self.fleet_drop_speed = 50
+        self.fleet_drop_speed = 500
         #Направление движения: self.fleet_direction = 1 -вправо/// = -1 - влево
         self.fleet_direction = 1
 

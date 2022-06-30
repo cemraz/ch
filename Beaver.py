@@ -15,6 +15,7 @@ class Beaver():
         #Загружаем фото бобра
         self.image = pygame.image.load('images/Beaver_run.bmp')
 #        self.image = pygame.image.load('Images/есть че.png')#Баксик вместо ореха
+#        self.image = pygame.image.load('images/acorn.bmp')
         self.rect = self.image.get_rect()
 
 

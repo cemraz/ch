@@ -7,7 +7,7 @@ from Bullet import Bulett
 from squirrel import Squirrel
 from time import sleep
 from GetStat import Stat
-
+from GetStat import Background
 
 class Game:
     """Класс для управления ресурсами и поведением игры."""
@@ -28,6 +28,7 @@ class Game:
         self.bullets = pygame.sprite.Group()
         self.squirrels = pygame.sprite.Group()
         self._create_sq()#Создание первого флота белок
+        self.bg = Background('Images/Beaver_BG.bmp',(0,0))
 
         pygame.font.init()
         self.font = pygame.font.SysFont('arial.ttf',32)
@@ -61,6 +62,10 @@ class Game:
             elif event.key == pygame.K_e:
                 if self.beaver.rect.right < self.screen.get_width()-500:
                     self.beaver.x += 500
+
+            elif event.key == pygame.K_TAB and self.stats.game_active == False:
+                self.stats.beavers_dead +=3
+                self.stats.game_active = True
 
     # Девствия при отжатии кнопок'''
     def _check_KEYUP(self,event): # Девствия при отжатии кнопок'''
@@ -136,6 +141,8 @@ class Game:
     def check_colisions(self):
         colisions = pygame.sprite.groupcollide(self.bullets, self.squirrels, False,
                                                True)  # первое тру-будет ли снаярд исчезать
+        if colisions !={}:
+            self.stats.sq_kill +=1
 
     # Удаление снаярдов за краем экрана
     def remove_bullets(self):
@@ -161,16 +168,25 @@ class Game:
 
     #Обработка столкновения ! белок с бобром
     def _ship_hit(self):
-        self.setting.beaver_limit -= 1  # Минус одна жизнь
+        if self.stats.beavers_dead > 0:
+            self.stats.beavers_dead -= 1  # Минус одна жизнь
 
-        sleep(1)#Остановка игры на 1 сек
+            sleep(1)#Остановка игры на 1 сек
 
-        self.squirrels.empty()#Очищаем белок
-        self.bullets.empty()#Очищаем пули
+            self.squirrels.empty()#Очищаем белок
+            self.bullets.empty()#Очищаем пули
 
-        self.beaver.center()
-#        self.beaver.x = 790#Возвращаем бобра в позицию по центру
+            self.beaver.center()
+        else:
+            self.stats.game_active = False
 
+    #Проверка добрались ли белки до низа экрана
+    def _check_bottom(self):
+        screen_rect = self.screen.get_height()
+        for sq in self.squirrels.sprites():
+            if sq.rect.bottom >= screen_rect:
+                self._ship_hit()
+                break
 
 
     #перемещение белок
@@ -180,11 +196,13 @@ class Game:
 
         if pygame.sprite.spritecollideany(self.beaver,self.squirrels):
             self._ship_hit()
-            if self.setting.beaver_limit == 0:
-                pass
+        self._check_bottom()
+#            if self.setting.beaver_limit == 0:
+#                pass
 
-
-
+    def game_over(self):
+        if self.stats.beavers_dead == 0:
+            self.stats.game_active = False
 
 
 
@@ -216,9 +234,12 @@ class Game:
         """Запуск основного цикла игры."""
         while True:
             self._check_events()#Отслеживание событий
-            self.beaver.update()#Перемещение Бобра
-            self._update_bullet()#Перемещние пуль
-            self._update_squirrel()  # Перемещение белок
+            if self.stats.game_active:
+                self.beaver.update()#Перемещение Бобра
+                self._update_bullet()#Перемещние пуль
+                self._update_squirrel()  # Перемещение белок
+#                if self.stats.game_active == False:
+#                    self.screen.blit(self.bg.image,self.bg.rect)
             self._update_screen()#Обновление экрана
 
 
