@@ -10,7 +10,7 @@ class Squirrel(Sprite):
         self.screen_w = game.setting.screen_w
         self.setting = game.setting
 
-        self.squirrel_speed = 1.4#Скорость премещения белки
+        self.squirrel_speed = self.setting.squirrel_speed#Скорость премещения белки
 
         self.image = pygame.image.load('Images/squirrel.bmp')#Изображение белки
         self.rect = self.image.get_rect()
@@ -37,5 +37,5 @@ class Squirrel(Sprite):
     #Возвращает True если у края
     def check_edges(self):
         screen_rect = self.screen.get_rect()
-        if self.rect.right == screen_rect.right or self.rect.left <= 0:
+        if self.rect.right >= screen_rect.right or self.rect.left <= 0:
             return True

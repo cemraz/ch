@@ -8,28 +8,29 @@ from squirrel import Squirrel
 from time import sleep
 from GetStat import Stat
 from GetStat import Background
+from Button import ButtonPlay,ButtonEnd,ButtonScreen
 
 class Game:
     """Класс для управления ресурсами и поведением игры."""
     def __init__(self):
         """Инициализирует игру и создает игровые ресурсы."""
         self.setting = Setting()
-        self.screen = pygame.display.set_mode((self.setting.screen_w, self.setting.screen_h))#Размер окна
+#        self.screen = pygame.display.set_mode((self.setting.screen_w, self.setting.screen_h))#Размер окна
 
-#        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)#FULL SCREEN
-#        self.setting.screen_w = self.screen.get_rect().width # Передает значения высоты и ширины в настройки
-#        self.setting.screen_h = self.screen.get_rect().height
+        self.screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)#FULL SCREEN
+        self.setting.screen_w = self.screen.get_rect().width # Передает значения высоты и ширины в настройки
+        self.setting.screen_h = self.screen.get_rect().height
 
         pygame.display.set_caption("Дикие бобры")#Назвние окна
 
         self.stats = Stat(self)#Класс статистики
-
+        self.but_sc = ButtonScreen(self,'Изменить разрешение')
+        self.but = ButtonPlay(self,'Нажмите ПРОБЕЛ для начала игры')
         self.beaver = Beaver(self)#Класс бобра
         self.bullets = pygame.sprite.Group()
         self.squirrels = pygame.sprite.Group()
         self._create_sq()#Создание первого флота белок
         self.bg = Background('Images/Beaver_BG.bmp',(0,0))
-
         pygame.font.init()
         self.font = pygame.font.SysFont('arial.ttf',32)
         self.text = self.font.render('Game Over',1,(255,0,0))
@@ -49,7 +50,7 @@ class Game:
             elif event.key == pygame.K_LEFT:  # Нажатие кнопки влево
                 self.beaver.moving_left = True
 
-            elif event.key == pygame.K_SPACE:
+            elif event.key == pygame.K_SPACE and self.stats.game_active == True:
                 self._fire_bullet()
 
             elif event.key == pygame.K_BACKSPACE:
@@ -63,9 +64,27 @@ class Game:
                 if self.beaver.rect.right < self.screen.get_width()-500:
                     self.beaver.x += 500
 
-            elif event.key == pygame.K_TAB and self.stats.game_active == False:
-                self.stats.beavers_dead +=3
+            elif event.key == pygame.K_SPACE and self.stats.game_active == False:
+                self.start_new_game()
+
+            elif event.key == pygame.K_1 and self.stats.game_active == True:
+                self.stats.game_active = False
+                pygame.mouse.set_visible(True)
+
+            elif event.key == pygame.K_1 and self.stats.game_active == False:
                 self.stats.game_active = True
+                pygame.mouse.set_visible(False)
+    def start_new_game(self):
+        self.stats.reset_stats()
+        self.stats.game_active = True
+        pygame.mouse.set_visible(False)
+
+    def _check_play_but(self,cord):
+        if self.but.rect.collidepoint(cord):
+            self.start_new_game()
+
+
+
 
     # Девствия при отжатии кнопок'''
     def _check_KEYUP(self,event): # Девствия при отжатии кнопок'''
@@ -124,6 +143,11 @@ class Game:
                     self._check_KEYDOWN(event)
                 elif event.type == pygame.KEYUP:  # Прекращение Действий
                     self._check_KEYUP(event)
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.stats.game_active == False:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self._check_play_but(mouse_pos)
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.stats.game_active == True:
+                    self._fire_bullet()
 
     #Обновление экрана
     def _update_screen(self):
@@ -132,14 +156,18 @@ class Game:
         self.beaver.blitime()  # Выводится бобер
         for bullet in self.bullets.sprites():#Вывод пуль
             bullet.blitime()
-
         self.squirrels.draw(self.screen)#Вывод белки
+        if self.stats.game_active == False:
+            self.but.draw_button()
+            but_end = ButtonEnd(self,f'Уничтожено {self.stats.sq_kill} белок')
+            but_end.draw_button()
+
 
         pygame.display.flip()  # Отображение последнего прорисованного экрана.
 
     # Проверка попадений
     def check_colisions(self):
-        colisions = pygame.sprite.groupcollide(self.bullets, self.squirrels, False,
+        colisions = pygame.sprite.groupcollide(self.bullets, self.squirrels, True,
                                                True)  # первое тру-будет ли снаярд исчезать
         if colisions !={}:
             self.stats.sq_kill +=1
@@ -155,6 +183,11 @@ class Game:
         if not self.squirrels:
             self.bullets.empty()
             self._create_sq()
+            print(self.stats.level)
+            if self.stats.level%2==0:
+                self.setting.squirrel_speed += 0.4
+                print(self.setting.squirrel_speed)
+            self.stats.level += 1
 
     #Движение пуль и удаление их за краем экрана,проверка попадания в белок,создание нового флота
     def _update_bullet(self):
@@ -170,7 +203,6 @@ class Game:
     def _ship_hit(self):
         if self.stats.beavers_dead > 0:
             self.stats.beavers_dead -= 1  # Минус одна жизнь
-
             sleep(1)#Остановка игры на 1 сек
 
             self.squirrels.empty()#Очищаем белок
@@ -199,14 +231,6 @@ class Game:
         self._check_bottom()
 #            if self.setting.beaver_limit == 0:
 #                pass
-
-    def game_over(self):
-        if self.stats.beavers_dead == 0:
-            self.stats.game_active = False
-
-
-
-
 
     #Плавный спуск белок по краю
     def down_squirrels(self):
@@ -238,7 +262,7 @@ class Game:
                 self.beaver.update()#Перемещение Бобра
                 self._update_bullet()#Перемещние пуль
                 self._update_squirrel()  # Перемещение белок
-#                if self.stats.game_active == False:
+ #               if self.stats.game_active == False:
 #                    self.screen.blit(self.bg.image,self.bg.rect)
             self._update_screen()#Обновление экрана
 
